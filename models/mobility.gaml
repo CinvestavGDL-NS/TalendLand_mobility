@@ -13,6 +13,9 @@ global
 	file shp_roads <- file("../includes/maps/cd_creativa_1.shp");
 	file shp_nodes <- file("../includes/maps/cd_creativa_nodes_1.shp");
 	
+	file 		shp_mibici <- file("../includes/maps/mibici_spots.shp");
+	image_file logo_mibici <- image_file("../includes/img/logo.png");
+	
 	
 	geometry shape <- envelope(shp_roads);
 	graph road_network;
@@ -23,6 +26,8 @@ global
 		create road from:shp_roads where (each != nil);
 		
 		road_network <- as_driving_graph(road, intersection);
+		
+		create mibici from: shp_mibici;
 		
 		create vehicle number: 100 with: (location: one_of(intersection).location);
 	}
@@ -40,6 +45,13 @@ species road skills: [road_skill]
 
 species intersection skills: [intersection_skill] ;
 
+species mibici 
+{
+	aspect basic
+	{
+		draw circle(10#m) color:#green at:location;
+	}
+}
 
 species vehicle skills: [driving] {
 	rgb color <- rnd_color(255);
@@ -71,6 +83,7 @@ experiment main type:gui
 		{
 			species road 	aspect:basic;
 			species vehicle aspect: base;
+			species mibici  aspect:basic;
 		}
 	}
 }
