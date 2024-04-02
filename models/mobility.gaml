@@ -26,10 +26,15 @@ global
 		create road from:shp_roads where (each != nil);
 		
 		road_network <- as_driving_graph(road, intersection);
+
+		create Bike number: 100 with: (location: one_of(intersection).location);
+
 		
 		create mibici from: shp_mibici;
 		
+
 		create vehicle number: 100 with: (location: one_of(intersection).location);
+		
 	}
 }
 
@@ -54,7 +59,7 @@ species mibici
 }
 
 species vehicle skills: [driving] {
-	rgb color <- rnd_color(255);
+	rgb color <- #red;
 	init {
 		vehicle_length <- 1.9 #m;
 		max_speed <- 100 #km / #h;
@@ -70,7 +75,28 @@ species vehicle skills: [driving] {
 		do drive;
 	}
 	aspect base {
-		draw triangle(5.0) color: color rotate: heading + 90 border: #black;
+		draw cube(5.0) color: color rotate: heading + 90 border: #black;
+	}
+}
+
+species Bike skills: [driving] {
+	rgb color <- #blue;
+	init {
+		vehicle_length <- 1.5 #m;
+		max_speed <- 18 #km / #h;
+		max_acceleration <- 1.5;
+	}
+
+	reflex select_next_path when: current_path = nil {
+		// A path that forms a cycle
+		do compute_path graph: road_network target: one_of(intersection);
+	}
+	
+	reflex commute when: current_path != nil {
+		do drive;
+	}
+	aspect base {
+		draw triangle(4.0) color: color rotate: heading + 90 border: #black;
 	}
 }
 
@@ -81,7 +107,8 @@ experiment main type:gui
 	{
 		display osm type:opengl
 		{
-			species road 	aspect:basic;
+			species road aspect: basic;
+			species Bike aspect: base;
 			species vehicle aspect: base;
 			species mibici  aspect:basic;
 		}
