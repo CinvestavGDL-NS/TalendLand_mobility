@@ -29,7 +29,8 @@ global
 		
 		create mibici from: shp_mibici;
 		
-		create vehicle number: 100 with: (location: one_of(intersection).location);
+		create vehicle  number: 100 with: (location: one_of(intersection).location);
+		create Bike 	number: 100 with: (location: one_of(mibici).location);
 		
 	}
 }
