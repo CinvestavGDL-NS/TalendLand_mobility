@@ -26,13 +26,9 @@ global
 		create road from:shp_roads where (each != nil);
 		
 		road_network <- as_driving_graph(road, intersection);
-
-		create Bike number: 100 with: (location: one_of(intersection).location);
-
 		
 		create mibici from: shp_mibici;
 		
-
 		create vehicle number: 100 with: (location: one_of(intersection).location);
 		
 	}
