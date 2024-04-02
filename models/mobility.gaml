@@ -25,12 +25,10 @@ global
 		create road from:shp_roads where (each != nil);
 		
 		road_network <- as_driving_graph(road, intersection);
-		
 		create mibici from: shp_mibici;
-		
 		create vehicle  number: 100 with: (location: one_of(intersection).location);
 		create Bike 	number: 100 with: (location: one_of(mibici).location);
-		
+		create People 	number: 50 with: (location: one_of(mibici).location);
 	}
 }
 
@@ -40,6 +38,13 @@ grid cell height: 100 width: 100 neighbors: 100
 	float pollution <- 0.0 min: 0.0 max: 100.0;
 	//Actualización de color (Rojo - alta conaminación / Verde - no contaminación)
 	rgb color <- #green update: rgb(255 *(pollution/30.0) , 255 * (1 - (pollution/30.0)), 0.0);
+	reflex commute {
+		ask (cell overlapping location)
+		{
+			pollution <- pollution -1;
+		}
+	}
+	
 }
 
 species road skills: [road_skill]
@@ -84,7 +89,7 @@ species vehicle skills: [driving] {
 		do drive;
 	}
 	aspect base {
-		draw cube(5.0) color: color rotate: heading + 90 border: #black;
+		draw cube(6.0) color: color rotate: heading + 90 border: #black;
 	}
 }
 
@@ -105,7 +110,28 @@ species Bike skills: [driving] {
 		do drive;
 	}
 	aspect base {
-		draw triangle(4.0) color: color rotate: heading + 90 border: #black;
+		draw triangle(5.0) color: color rotate: heading + 90 border: #black;
+	}
+}
+
+species People skills: [driving] {
+	rgb color <- #green;
+	init {
+		vehicle_length <- 1.0 #m;
+		max_speed <- 5 #km / #h;
+		max_acceleration <- 0.5;
+	}
+
+	reflex select_next_path when: current_path = nil {
+		// A path that forms a cycle
+		do compute_path graph: road_network target: one_of(intersection);
+	}
+	
+	reflex commute when: current_path != nil {
+		do drive;
+	}
+	aspect base {
+		draw circle(5.0) color: color rotate: heading + 90 border: #black;
 	}
 }
 
@@ -120,6 +146,7 @@ experiment main type:gui
 			species road aspect: basic;
 			species Bike aspect: base;
 			species vehicle aspect: base;
+			species People aspect: base;
 			species mibici  aspect:basic;
 		}
 	}
