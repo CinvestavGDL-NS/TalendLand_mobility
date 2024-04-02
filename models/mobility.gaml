@@ -16,7 +16,6 @@ global
 	file 		shp_mibici <- file("../includes/maps/mibici_spots.shp");
 	image_file logo_mibici <- image_file("../includes/img/logo.png");
 	
-	
 	geometry shape <- envelope(shp_roads);
 	graph road_network;
 	
@@ -35,6 +34,13 @@ global
 	}
 }
 
+grid cell height: 100 width: 100 neighbors: 100
+{
+	//Nivel de contaminación
+	float pollution <- 0.0 min: 0.0 max: 100.0;
+	//Actualización de color (Rojo - alta conaminación / Verde - no contaminación)
+	rgb color <- #green update: rgb(255 *(pollution/30.0) , 255 * (1 - (pollution/30.0)), 0.0);
+}
 
 species road skills: [road_skill]
 {
@@ -57,10 +63,12 @@ species mibici
 
 species vehicle skills: [driving] {
 	rgb color <- #red;
+	float pollution_generated <- 10.0;
 	init {
 		vehicle_length <- 1.9 #m;
 		max_speed <- 100 #km / #h;
 		max_acceleration <- 3.5;
+		
 	}
 
 	reflex select_next_path when: current_path = nil {
@@ -69,6 +77,10 @@ species vehicle skills: [driving] {
 	}
 	
 	reflex commute when: current_path != nil {
+		ask (cell overlapping location)
+		{
+			pollution <- pollution + myself.pollution_generated;
+		}
 		do drive;
 	}
 	aspect base {
@@ -79,7 +91,7 @@ species vehicle skills: [driving] {
 species Bike skills: [driving] {
 	rgb color <- #blue;
 	init {
-		vehicle_length <- 1.5 #m;
+		vehicle_length <- 1.0 #m;
 		max_speed <- 18 #km / #h;
 		max_acceleration <- 1.5;
 	}
@@ -104,6 +116,7 @@ experiment main type:gui
 	{
 		display osm type:opengl
 		{
+			grid cell elevation: pollution * 3.0 triangulation: true transparency: 0.7;
 			species road aspect: basic;
 			species Bike aspect: base;
 			species vehicle aspect: base;
