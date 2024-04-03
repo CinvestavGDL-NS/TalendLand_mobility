@@ -43,7 +43,7 @@ global
 		create mibici 	from: shp_mibici;
 		create vehicle  number: no_vehicles with: (location: one_of(non_deadend_nodes).location, flg_background:true);
 		create vehicle  number: no_cars 	with: (location: one_of(non_deadend_nodes).location, flg_background:false);
-		create Bike 	number: no_bike 	with: (location: one_of(mibici).location);
+		create Bike 	number: no_bike 	with: (location: (non_deadend_nodes closest_to one_of(mibici)).location);
 		create People 	number: no_pedestrian 	with: (location: one_of(non_deadend_nodes).location);
 		
 		
