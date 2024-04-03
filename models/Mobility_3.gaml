@@ -15,14 +15,15 @@ global
 	file 		shp_mibici <- file("../includes/maps/mibici_spots.shp");
 	image_file 	logo_mibici <- image_file("../includes/img/mibici_logo.png");
 	
-	image_file 	img_auto <- image_file("../includes/img/coche.png");
-	image_file 	img_bike <- image_file("../includes/img/bicicleta.png");
+	image_file 	img_auto 	<- image_file("../includes/img/coche.png");
+	image_file 	img_bike 	<- image_file("../includes/img/bicicleta.png");
 	image_file 	img_pedestrian <- image_file("../includes/img/peaton.png");
 	
 	
 	geometry shape <- envelope(shp_roads);
 	graph road_network;
 	
+	list<intersection> non_deadend_nodes;
 	
 	// Parameters
 	int no_vehicles 	;
@@ -37,11 +38,13 @@ global
 		create road from:shp_roads where (each != nil);
 		
 		road_network <- as_driving_graph(road, intersection);
+		non_deadend_nodes <- intersection where !empty(each.roads_out);
+		
 		create mibici 	from: shp_mibici;
-		create vehicle  number: no_vehicles with: (location: one_of(intersection).location, flg_background:true);
-		create vehicle  number: no_cars 	with: (location: one_of(intersection).location, flg_background:false);
-		create Bike 	number: no_bike 	with: (location: one_of(mibici).location);
-		create People 	number: no_pedestrian 	with: (location: one_of(intersection).location);
+		create vehicle  number: no_vehicles with: (location: one_of(non_deadend_nodes).location, flg_background:true);
+		create vehicle  number: no_cars 	with: (location: one_of(non_deadend_nodes).location, flg_background:false);
+		create Bike 	number: no_bike 	with: (location: (non_deadend_nodes closest_to one_of(mibici)).location);
+		create People 	number: no_pedestrian 	with: (location: one_of(non_deadend_nodes).location);
 	}
 }
 
@@ -80,12 +83,17 @@ species vehicle skills: [driving] {
 		
 	}
 
+	reflex relocate when: next_road = nil and distance_to_current_target = 0.0 {
+		do unregister;
+		location <- one_of(non_deadend_nodes).location;
+	}
+	
 	reflex select_next_path when: current_path = nil {
-		intersection goal <- one_of(intersection);
+		intersection goal <- one_of(non_deadend_nodes);
 		
 		loop while: goal.location = location 
 		{
-			goal <- one_of(intersection);
+			goal <- one_of(non_deadend_nodes);
 		}
 		
 		do compute_path graph: road_network target: goal;
@@ -115,7 +123,7 @@ species Bike skills: [driving]
 
 	reflex select_next_path when: current_path = nil 
 	{
-		do compute_path graph: road_network target: intersection closest_to one_of(mibici); 
+		do compute_path graph: road_network target: non_deadend_nodes closest_to one_of(mibici); 
 	}
 	
 	reflex commute when: current_path != nil 
@@ -141,7 +149,7 @@ species People skills: [driving]
 
 	reflex select_next_path when: current_path = nil 
 	{
-		do compute_path graph: road_network target: one_of(intersection);
+		do compute_path graph: road_network target: one_of(non_deadend_nodes);
 	}
 	
 	reflex commute when: current_path != nil 

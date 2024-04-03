@@ -22,6 +22,9 @@ global
 	
 	geometry shape <- envelope(shp_roads);
 	graph road_network;
+	list<intersection> non_deadend_nodes;
+	
+	map<string,int> congestioned_road <- ["Top1"::0,"Top2"::0,"Top3"::0,"Top4"::0,"Top5"::0];
 	
 	// Parameters
 	int no_vehicles 	;
@@ -34,14 +37,39 @@ global
 		create intersection from: shp_nodes;
 		create road from:shp_roads where (each != nil);
 		
-		road_network <- as_driving_graph(road, intersection);
+		road_network 	<- as_driving_graph(road, intersection);
+		non_deadend_nodes <- intersection where !empty(each.roads_out);
+		
 		create mibici 	from: shp_mibici;
-		create vehicle  number: no_vehicles with: (location: one_of(intersection).location, flg_background:true);
-		create vehicle  number: no_cars 	with: (location: one_of(intersection).location, flg_background:false);
+		create vehicle  number: no_vehicles with: (location: one_of(non_deadend_nodes).location, flg_background:true);
+		create vehicle  number: no_cars 	with: (location: one_of(non_deadend_nodes).location, flg_background:false);
 		create Bike 	number: no_bike 	with: (location: one_of(mibici).location);
-		create People 	number: no_pedestrian 	with: (location: one_of(intersection).location);
+		create People 	number: no_pedestrian 	with: (location: one_of(non_deadend_nodes).location);
+		
+		
 	}
+	
+	reflex check_road when:every(20#cycles)
+	{
+		int count <- 1;
+		 loop element over: reverse(road sort_by(length(each.all_agents)))
+		 {
+		 	if count > 5
+		 	{
+		 		write "--------------------------------------------------";
+		 		break;
+		 	}
+		 	string key <-  "Top"+count;
+		 	congestioned_road[key] <- length(element.all_agents);
+		 	write "Ciclo: "+cycle+" --> "+key+": " + element.name;
+		 	
+		 	count <- count+ 1;
+		 }
+	}
+	
+
 }
+
 
 grid cell height: 100 width: 100 neighbors: 100
 {
@@ -90,13 +118,18 @@ species vehicle skills: [driving] {
 		max_acceleration <- 3.5;
 		
 	}
+	
+	reflex relocate when: next_road = nil and distance_to_current_target = 0.0 {
+		do unregister;
+		location <- one_of(non_deadend_nodes).location;
+	}
 
 	reflex select_next_path when: current_path = nil {
-		intersection goal <- one_of(intersection);
+		intersection goal <- one_of(non_deadend_nodes);
 		
 		loop while: goal.location = location 
 		{
-			goal <- one_of(intersection);
+			goal <- one_of(non_deadend_nodes);
 		}
 		
 		do compute_path graph: road_network target: goal;
@@ -130,7 +163,7 @@ species Bike skills: [driving]
 
 	reflex select_next_path when: current_path = nil 
 	{
-		do compute_path graph: road_network target: intersection closest_to one_of(mibici); 
+		do compute_path graph: road_network target: non_deadend_nodes closest_to one_of(mibici); 
 	}
 	
 	reflex commute when: current_path != nil 
@@ -154,9 +187,10 @@ species People skills: [driving]
 		max_acceleration <- 0.5;
 	}
 
+
 	reflex select_next_path when: current_path = nil 
 	{
-		do compute_path graph: road_network target: one_of(intersection);
+		do compute_path graph: road_network target: one_of(non_deadend_nodes);
 	}
 	
 	reflex commute when: current_path != nil 
@@ -192,6 +226,13 @@ experiment main type:gui
 			species mibici  aspect: basic	refresh: false;
 
 		}
+		
+		display "Most congestioned roads" 
+		{
+            chart "Congestion" type: series {
+                datalist congestioned_road.keys value: congestioned_road.values ;
+            }
+        }	
 	}
 }
 
