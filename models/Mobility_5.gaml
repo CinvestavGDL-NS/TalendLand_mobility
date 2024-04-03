@@ -1,12 +1,11 @@
 /**
-* Name: mobility
-* Based on the internal empty template. 
-* Author: Lili
+* Name: Mobility4
+* Add graphs
 * Tags: 
 */
 
 
-model mobility
+model Mobility4
 
 global
 {
@@ -74,7 +73,6 @@ species mibici
 	aspect basic
 	{
 		draw logo_mibici size:20#m at:location;
-		//draw rectangle(10#m,20#m) color:#green at:location;
 	}
 }
 
@@ -115,8 +113,6 @@ species vehicle skills: [driving] {
 	
 	aspect base 
 	{
-		//color <- distance_to_goal=0 ? #purple :#red;
-		//draw cube(6.0) color: color rotate: heading + 90 border: #black;
 		draw img_auto size:25 rotate: heading;
 	}
 }
@@ -134,7 +130,7 @@ species Bike skills: [driving]
 
 	reflex select_next_path when: current_path = nil 
 	{
-		do compute_path graph: road_network target: intersection closest_to one_of(mibici); // TODO: Cambiar intersection por mibici
+		do compute_path graph: road_network target: intersection closest_to one_of(mibici); 
 	}
 	
 	reflex commute when: current_path != nil 
@@ -144,7 +140,6 @@ species Bike skills: [driving]
 	
 	aspect base 
 	{
-		//draw triangle(5.0) color: color rotate: heading + 90 border: #black;
 		draw img_bike size:15 rotate: heading+180;
 	}
 }
@@ -171,7 +166,6 @@ species People skills: [driving]
 	
 	aspect base 
 	{
-		//draw circle(5.0) color: color rotate: heading + 90 border: #black;
 		draw img_pedestrian size:10 rotate: heading;
 	}
 
@@ -185,7 +179,7 @@ experiment main type:gui
 	parameter "Vehicles" 	var: no_cars  		<- 50 	category:"Population" min: 0  max: 500 step: 1;
     parameter "Bike"		var: no_bike 	 	<- 50 	category:"Population" min: 0  max: 500 step: 1;
     parameter "Pedestrian" 	var: no_pedestrian  <- 100 	category:"Population" min: 0  max: 500 step: 1;
-	
+    
 	output
 	{
 		display osm type:opengl
@@ -200,6 +194,4 @@ experiment main type:gui
 		}
 	}
 }
-
-
 
