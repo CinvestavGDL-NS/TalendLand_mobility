@@ -44,7 +44,6 @@ grid cell height: 100 width: 100 neighbors: 100
 			pollution <- pollution -1;
 		}
 	}
-	
 }
 
 species road skills: [road_skill]
@@ -62,24 +61,34 @@ species mibici
 {
 	aspect basic
 	{
-		draw circle(10#m) color:#green at:location;
+		draw rectangle(10#m,20#m) color:#green at:location;
 	}
 }
+
 
 species vehicle skills: [driving] {
 	rgb color <- #red;
 	float pollution_generated <- 10.0;
-	init {
+
+	init 
+	{
 		vehicle_length <- 1.9 #m;
 		max_speed <- 100 #km / #h;
 		max_acceleration <- 3.5;
 		
 	}
 
-	reflex select_next_path when: current_path = nil {
-		// A path that forms a cycle
-		do compute_path graph: road_network target: one_of(intersection);
+	reflex select_next_path when: distance_to_goal = 0.0 {
+		intersection goal <- one_of(intersection);
+		
+		loop while: goal.location = location 
+		{
+			goal <- one_of(intersection);
+		}
+		
+		do compute_path graph: road_network target: goal;
 	}
+	
 	
 	reflex commute when: current_path != nil {
 		ask (cell overlapping location)
@@ -88,52 +97,67 @@ species vehicle skills: [driving] {
 		}
 		do drive;
 	}
-	aspect base {
-		draw cube(6.0) color: color rotate: heading + 90 border: #black;
+	
+	aspect base 
+	{
+		draw cube(6.0) color: distance_to_goal=0 ? #purple :color rotate: heading + 90 border: #black;
 	}
 }
 
-species Bike skills: [driving] {
+
+species Bike skills: [driving] 
+{
 	rgb color <- #blue;
-	init {
+	init 
+	{
 		vehicle_length <- 1.0 #m;
 		max_speed <- 18 #km / #h;
 		max_acceleration <- 1.5;
 	}
 
-	reflex select_next_path when: current_path = nil {
-		// A path that forms a cycle
-		do compute_path graph: road_network target: one_of(intersection);
+	reflex select_next_path when: current_path = nil 
+	{
+		do compute_path graph: road_network target: intersection closest_to one_of(mibici); // TODO: Cambiar intersection por mibici
 	}
 	
-	reflex commute when: current_path != nil {
+	reflex commute when: current_path != nil 
+	{
 		do drive;
 	}
-	aspect base {
+	
+	aspect base 
+	{
 		draw triangle(5.0) color: color rotate: heading + 90 border: #black;
 	}
 }
 
-species People skills: [driving] {
+species People skills: [driving] 
+{
 	rgb color <- #green;
-	init {
+	init 
+	{
 		vehicle_length <- 1.0 #m;
 		max_speed <- 5 #km / #h;
 		max_acceleration <- 0.5;
 	}
 
-	reflex select_next_path when: current_path = nil {
-		// A path that forms a cycle
+	reflex select_next_path when: current_path = nil 
+	{
 		do compute_path graph: road_network target: one_of(intersection);
 	}
 	
-	reflex commute when: current_path != nil {
+	reflex commute when: current_path != nil 
+	{
 		do drive;
 	}
-	aspect base {
+	
+	aspect base 
+	{
 		draw circle(5.0) color: color rotate: heading + 90 border: #black;
 	}
+
 }
+
 
 
 experiment main type:gui
@@ -143,11 +167,12 @@ experiment main type:gui
 		display osm type:opengl
 		{
 			grid cell elevation: pollution * 3.0 triangulation: true transparency: 0.7;
-			species road aspect: basic;
-			species Bike aspect: base;
+			species road 	aspect: basic	refresh:false;
+			species Bike 	aspect: base;
 			species vehicle aspect: base;
-			species People aspect: base;
-			species mibici  aspect:basic;
+			species People 	aspect: base;
+			species mibici  aspect: basic	refresh: false;
+
 		}
 	}
 }
